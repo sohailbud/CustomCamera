@@ -17,6 +17,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import com.example.android.customcamera.Camera.CameraPreview;
+import com.example.android.customcamera.Camera.FocusView;
+import com.example.android.customcamera.Camera.PreviewSurfaceView;
 import com.example.android.customcamera.R;
 
 import java.io.File;
@@ -40,10 +42,13 @@ public class CameraFragment extends Fragment {
 
     private Camera camera;
     private CameraPreview cameraPreview;
+    private PreviewSurfaceView previewSurfaceView;
+    private FocusView focusView;
 
     public CameraFragment() {
         // Required empty public constructor
     }
+
 
 
     @Override
@@ -58,7 +63,6 @@ public class CameraFragment extends Fragment {
         // Create our Preview view and set it as the content of our activity
         cameraPreview = new CameraPreview(getActivity(), camera);
         final FrameLayout preview = (FrameLayout) view.findViewById(R.id.camera_preview);
-        preview.addView(cameraPreview);
 
         ImageView captureButton = (ImageView) view.findViewById(R.id.capture_button);
         captureButton.setOnClickListener(captureButtonOnClickListener);
@@ -68,19 +72,24 @@ public class CameraFragment extends Fragment {
             viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
-                    Log.i("WIDTH", String.valueOf(preview.getWidth()));
-                    Log.i("HEIGHT", String.valueOf(preview.getHeight()));
+                    cameraPreview.setDisplayWidth(preview.getWidth());
+                    cameraPreview.setDisplayHeight(preview.getHeight());
+                    Log.i("WIDTH - 2", String.valueOf(preview.getWidth()));
+                    Log.i("HEIGHT - 2", String.valueOf(preview.getHeight()));
                 }
             });
         }
 
+        preview.addView(cameraPreview);
+
         return view;
     }
+
+
 
     @Override
     public void onPause() {
         super.onPause();
-
         releaseCamera();
     }
 

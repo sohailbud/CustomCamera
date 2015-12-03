@@ -5,13 +5,26 @@
     tools:context="com.example.android.customcamera.Fragments.CameraFragment">
 
     <FrameLayout
-        android:id="@+id/camera_preview"
+        android:id="@+id/camera_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
+
+        <com.example.android.customcamera.Camera.PreviewSurfaceView
+            android:id="@+id/preview_surface_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.example.android.customcamera.Camera.FocusView
+            android:id="@+id/drawing_focus_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
 
     <ImageView
         android:id="@+id/capture_button"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"

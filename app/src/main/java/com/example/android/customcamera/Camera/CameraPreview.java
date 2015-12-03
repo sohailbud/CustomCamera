@@ -1,10 +1,16 @@
 package com.example.android.customcamera.Camera;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.hardware.Camera;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import com.example.android.customcamera.R;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,10 +23,19 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     private SurfaceHolder surfaceHolder;
     private Camera camera;
+    private int displayWidth;
+    private int displayHeight;
+    private Canvas canvas;
+
+
+    Camera.Size previewSize;
+    List<Camera.Size> supportedPreviewSizes;
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
         this.camera = camera;
+
+        supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
 
         // Install a SurfaceHolder.Callback so we get notified
         // when underlying surface gets created and destroyed
@@ -30,6 +45,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+
+        canvas = holder.lockCanvas();
+
         try {
             camera.setPreviewDisplay(holder);
             camera.startPreview();
@@ -56,31 +74,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
 
         // set preview size and make any resize, rotate or reformatting changes here
-        Camera.Parameters cameraParameters = camera.getParameters();
-        List<Camera.Size> sizes = cameraParameters.getSupportedPreviewSizes();
-        Camera.Size optimalSize = getOptimalPreviewSize(sizes,
-                getResources().getDisplayMetrics().widthPixels,
-                getResources().getDisplayMetrics().heightPixels);
+        Camera.Parameters parameters = camera.getParameters();
+        parameters.setPreviewSize(previewSize.width, previewSize.height);
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
 
-        cameraParameters.setPreviewSize(optimalSize.width, optimalSize.height);
-
-        cameraParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        camera.setParameters(parameters);
 
         camera.setDisplayOrientation(90);
-
-
-//        if (cameraParameters.getMaxNumMeteringAreas() > 0) { // check that metering areas are supported
-//            List<Camera.Area> meteringAreas = new ArrayList<>();
-//
-//            Rect areaRect1 = new Rect(-100, -100, 100, 100);    // specify an area in center of image
-//            meteringAreas.add(new Camera.Area(areaRect1, 600)); // set weigh to 60%
-//            Rect areaRect2 = new Rect(800, -1000, 1000, -800);  // specify an area in upper right of image
-//            meteringAreas.add(new Camera.Area(areaRect2, 400)); //set weight to 40%
-//            cameraParameters.setMeteringAreas(meteringAreas);
-//        }
-
-        camera.setParameters(cameraParameters);
-
 
         // start preview with new settings
         try {
@@ -97,19 +97,30 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // Empty. Takes care of releasing the camera preview in your activity.
     }
 
-    private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
-        final double ASPECT_TOLERANCE = 0.05;
-        double targetRatio = (double) w/h;
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
-        if (sizes==null) return null;
+
+        final int width = resolveSize(getSuggestedMinimumWidth(), widthMeasureSpec);
+        final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
+        setMeasuredDimension(width, height);
+
+        if (supportedPreviewSizes != null) {
+            previewSize = getOptimalPreviewSize(supportedPreviewSizes, width, height);
+        }
+    }
+
+    private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
+        final double ASPECT_TOLERANCE = 0.1;
+        double targetRatio = (double) h / w;
+
+        if (sizes == null) return null;
 
         Camera.Size optimalSize = null;
-
         double minDiff = Double.MAX_VALUE;
 
         int targetHeight = h;
 
-        // Find size
         for (Camera.Size size : sizes) {
             double ratio = (double) size.width / size.height;
             if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE) continue;
@@ -130,5 +141,75 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
         return optimalSize;
     }
+
+    public void setDisplayWidth(int displayWidth) {
+        this.displayWidth = displayWidth;
+    }
+
+    public void setDisplayHeight(int displayHeight) {
+        this.displayHeight = displayHeight;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        float x = event.getX();
+        float y = event.getY();
+        float touchMajor = event.getTouchMajor();
+        float touchMinor = event.getTouchMinor();
+
+        Rect rect = calculateFocusArea(x, y, touchMajor, touchMinor);
+        focusOnTouch(event, rect);
+
+        return true;
+    }
+
+    /**
+     * /Convert from View's width and height to +/- 1000
+     */
+    private Rect calculateFocusArea(float x, float y, float touchMajor, float touchMinor) {
+        Rect focusRect = new Rect(
+                (int)(x - touchMajor/2),
+                (int)(y - touchMinor/2),
+                (int)(x + touchMajor/2),
+                (int)(y + touchMinor/2));
+
+        Rect targetFocusRect = new Rect(
+                focusRect.left * 2000 / displayWidth - 1000,
+                focusRect.top * 2000 / displayHeight - 1000,
+                focusRect.right * 2000 / displayWidth - 1000,
+                focusRect.bottom * 2000 / displayHeight - 1000);
+
+        Paint paint = new Paint();
+        paint.setColor(Color.BLUE);
+        paint.setStyle(Paint.Style.STROKE);
+
+        canvas.drawRect(targetFocusRect, paint);
+        surfaceHolder.unlockCanvasAndPost(canvas);
+
+        return targetFocusRect;
+    }
+
+    private void focusOnTouch(MotionEvent event, Rect rect) {
+
+        if (camera != null) {
+            final List<Camera.Area> focusList = new ArrayList<>();
+            Camera.Area focusArea = new Camera.Area(rect, 1000);
+            focusList.add(focusArea);
+
+            Camera.Parameters cameraParameters = camera.getParameters();
+            cameraParameters.setFocusAreas(focusList);
+            cameraParameters.setMeteringAreas(focusList);
+            camera.setParameters(cameraParameters);
+        }
+
+
+
+    }
+
+
+
+
+
 
 }
