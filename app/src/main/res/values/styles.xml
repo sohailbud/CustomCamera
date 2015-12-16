@@ -5,8 +5,7 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.DesignDemo" parent="Base.Theme.DesignDemo">
-    </style>
+    <style name="Theme.DesignDemo" parent="Base.Theme.DesignDemo"></style>
 
     <style name="Base.Theme.DesignDemo" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">#673AB7</item>
@@ -14,5 +13,13 @@
         <item name="colorAccent">#FF4081</item>
         <item name="android:windowBackground">@color/primary</item>
     </style>
+
+
+    <declare-styleable name="CropperView">
+        <attr name="grid_color" format="color" />
+        <attr name="grid_thickness" format="dimension" />
+        <attr name="grid_opacity" format="float" />
+        <attr name="padding_color" format="color" />
+    </declare-styleable>
 
 </resources>
