@@ -1,6 +1,7 @@
 package com.example.android.customcamera.Camera;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -19,41 +20,36 @@ import java.util.List;
 /**
  * Created by Sohail on 11/23/15.
  */
-public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
+public class CameraPreview implements SurfaceHolder.Callback {
 
     private SurfaceHolder surfaceHolder;
+    private int displayWidth, displayHeight;
+    private Context context;
+
+    @SuppressWarnings("deprecation")
     private Camera camera;
-    private int displayWidth;
-    private int displayHeight;
-    private Canvas canvas;
 
+    @SuppressWarnings("deprecation")
+    private Camera.Parameters cameraParams;
 
-    Camera.Size previewSize;
-    List<Camera.Size> supportedPreviewSizes;
+    private Camera.Size previewSize;
 
     public CameraPreview(Context context, Camera camera) {
-        super(context);
+        this.context = context;
         this.camera = camera;
-
-        supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
-
-        // Install a SurfaceHolder.Callback so we get notified
-        // when underlying surface gets created and destroyed
-        surfaceHolder = getHolder();
-        surfaceHolder.addCallback(this);
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        surfaceHolder = holder;
 
-        canvas = holder.lockCanvas();
-
-        try {
-            camera.setPreviewDisplay(holder);
-            camera.startPreview();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        if (camera != null)
+            try {
+                camera.setPreviewDisplay(holder);
+                camera.startPreview();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
 
     @Override
@@ -74,11 +70,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
 
         // set preview size and make any resize, rotate or reformatting changes here
-        Camera.Parameters parameters = camera.getParameters();
-        parameters.setPreviewSize(previewSize.width, previewSize.height);
-        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+        cameraParams = camera.getParameters();
 
-        camera.setParameters(parameters);
+        if (previewSize != null) cameraParams.setPreviewSize(previewSize.width, previewSize.height);
+
+        cameraParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+
+        camera.setParameters(cameraParams);
 
         camera.setDisplayOrientation(90);
 
@@ -89,127 +87,83 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         // Empty. Takes care of releasing the camera preview in your activity.
+        releaseCamera();
     }
 
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-
-
-        final int width = resolveSize(getSuggestedMinimumWidth(), widthMeasureSpec);
-        final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
-        setMeasuredDimension(width, height);
-
-        if (supportedPreviewSizes != null) {
-            previewSize = getOptimalPreviewSize(supportedPreviewSizes, width, height);
-        }
-    }
-
-    private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
-        final double ASPECT_TOLERANCE = 0.1;
-        double targetRatio = (double) h / w;
-
-        if (sizes == null) return null;
-
-        Camera.Size optimalSize = null;
-        double minDiff = Double.MAX_VALUE;
-
-        int targetHeight = h;
-
-        for (Camera.Size size : sizes) {
-            double ratio = (double) size.width / size.height;
-            if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE) continue;
-            if (Math.abs(size.height - targetHeight) < minDiff) {
-                optimalSize = size;
-                minDiff = Math.abs(size.height - targetHeight);
-            }
-        }
-
-        if (optimalSize == null) {
-            minDiff = Double.MAX_VALUE;
-            for (Camera.Size size : sizes) {
-                if (Math.abs(size.height - targetHeight) < minDiff) {
-                    optimalSize = size;
-                    minDiff = Math.abs(size.height - targetHeight);
-                }
-            }
-        }
-        return optimalSize;
+    public int getDisplayWidth() {
+        return displayWidth;
     }
 
     public void setDisplayWidth(int displayWidth) {
         this.displayWidth = displayWidth;
     }
 
+    public int getDisplayHeight() {
+        return displayHeight;
+    }
+
     public void setDisplayHeight(int displayHeight) {
         this.displayHeight = displayHeight;
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-
-        float x = event.getX();
-        float y = event.getY();
-        float touchMajor = event.getTouchMajor();
-        float touchMinor = event.getTouchMinor();
-
-        Rect rect = calculateFocusArea(x, y, touchMajor, touchMinor);
-        focusOnTouch(event, rect);
-
-        return true;
+    /**
+     * Releases camera
+     */
+    private void releaseCamera() {
+        if (camera != null) {
+            camera.stopPreview();
+            camera.setPreviewCallback(null);
+            camera.release();
+            camera = null;
+        }
     }
 
     /**
-     * /Convert from View's width and height to +/- 1000
+     * Called from PreviewSurfaceView to set touch focus.
      */
-    private Rect calculateFocusArea(float x, float y, float touchMajor, float touchMinor) {
-        Rect focusRect = new Rect(
-                (int)(x - touchMajor/2),
-                (int)(y - touchMinor/2),
-                (int)(x + touchMajor/2),
-                (int)(y + touchMinor/2));
+    public void onTouchFocus(Rect touchFocusRect) {
 
-        Rect targetFocusRect = new Rect(
-                focusRect.left * 2000 / displayWidth - 1000,
-                focusRect.top * 2000 / displayHeight - 1000,
-                focusRect.right * 2000 / displayWidth - 1000,
-                focusRect.bottom * 2000 / displayHeight - 1000);
+        List<Camera.Area> focusList = new ArrayList<>();
+        Camera.Area focusArea = new Camera.Area(touchFocusRect, 1000);
+        focusList.add(focusArea);
 
-        Paint paint = new Paint();
-        paint.setColor(Color.BLUE);
-        paint.setStyle(Paint.Style.STROKE);
+        Camera.Parameters cameraParams = camera.getParameters();
+        cameraParams.setFocusAreas(focusList);
+        cameraParams.setMeteringAreas(focusList);
+        camera.setParameters(cameraParams);
 
-        canvas.drawRect(targetFocusRect, paint);
-        surfaceHolder.unlockCanvasAndPost(canvas);
-
-        return targetFocusRect;
+        camera.autoFocus(autoFocusCallback);
     }
 
-    private void focusOnTouch(MotionEvent event, Rect rect) {
-
-        if (camera != null) {
-            final List<Camera.Area> focusList = new ArrayList<>();
-            Camera.Area focusArea = new Camera.Area(rect, 1000);
-            focusList.add(focusArea);
-
-            Camera.Parameters cameraParameters = camera.getParameters();
-            cameraParameters.setFocusAreas(focusList);
-            cameraParameters.setMeteringAreas(focusList);
-            camera.setParameters(cameraParameters);
+    /**
+     * Autofocus Callback
+     */
+    @SuppressWarnings("deprecation")
+    Camera.AutoFocusCallback autoFocusCallback = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean success, Camera camera) {
+            if (success) camera.cancelAutoFocus();
         }
+    };
 
-
-
+    /**
+     * get instance of camera
+     */
+    public Camera getCamera() {
+        return camera != null ? camera : null;
     }
 
-
-
-
-
-
+    /**
+     * set preview size from {@link PreviewSurfaceView#onMeasure(int, int)}
+     */
+    public void setPreviewSize(Camera.Size previewSize) {
+        this.previewSize = previewSize;
+    }
 }
+
+

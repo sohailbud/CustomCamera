@@ -3,8 +3,6 @@ package com.example.android.customcamera.Fragments;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -17,12 +15,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.Toast;
 
 import com.example.android.customcamera.Adapter.GalleryRecyclerViewAdapter;
 import com.example.android.customcamera.R;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,7 +56,8 @@ public class GalleryImagePickerFragment extends Fragment {
         recyclerView.setLayoutManager(layoutManager);
 
         // specify an adapter
-        RecyclerView.Adapter adapter = new GalleryRecyclerViewAdapter(getActivity(), getThumbnails(getContext()));
+        RecyclerView.Adapter adapter = new GalleryRecyclerViewAdapter(
+                getActivity(), getFullImages(getContext()));
         recyclerView.setAdapter(adapter);
 
         return view;
@@ -68,9 +65,12 @@ public class GalleryImagePickerFragment extends Fragment {
 
 
     public List<String> getFullImages(Context context) {
+
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-        String order = MediaStore.Images.Media.DATE_TAKEN + " DESC";
-        CursorLoader imagesCursorLoader = new CursorLoader(context, uri, null, null, null, order);
+        String order = MediaStore.Images.Media.DATE_TAKEN + " ASC";
+
+        CursorLoader imagesCursorLoader = new CursorLoader(
+                context, uri, null, null, null, order);
         Cursor imageCursor = imagesCursorLoader.loadInBackground();
 
         List<String> imagesData = new ArrayList<>();
@@ -84,7 +84,6 @@ public class GalleryImagePickerFragment extends Fragment {
         return imagesData;
 
     }
-
 
     public List<String> getThumbnails(Context context) {
 
@@ -103,6 +102,4 @@ public class GalleryImagePickerFragment extends Fragment {
 
         return thumbnailsData;
     }
-
-
 }

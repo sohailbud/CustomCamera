@@ -10,6 +10,7 @@ import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -40,16 +41,14 @@ public class CameraFragment extends Fragment {
 
     private ViewTreeObserver viewTreeObserver;
 
-    private Camera camera;
-    private CameraPreview cameraPreview;
     private PreviewSurfaceView previewSurfaceView;
+    private CameraPreview cameraPreview;
     private FocusView focusView;
+    private Camera camera;
 
     public CameraFragment() {
         // Required empty public constructor
     }
-
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -60,38 +59,45 @@ public class CameraFragment extends Fragment {
         // create instance of camera
         if (deviceHasCameraHardware(getActivity())) camera = getCameraInstance();
 
-        // Create our Preview view and set it as the content of our activity
+        previewSurfaceView = (PreviewSurfaceView) view.findViewById(R.id.preview_surface_view);
+        SurfaceHolder surfaceHolder = previewSurfaceView.getHolder();
+
+        // Create our Preview view
         cameraPreview = new CameraPreview(getActivity(), camera);
-        final FrameLayout preview = (FrameLayout) view.findViewById(R.id.camera_preview);
+
+        // Install a SurfaceHolder.Callback so we get notified
+        // when underlying surface gets created and destroyed
+        surfaceHolder.addCallback(cameraPreview);
+//        surfaceHolder.setType();
+
+        previewSurfaceView.setListener(cameraPreview);
+        focusView = (FocusView) view.findViewById(R.id.drawing_focus_view);
+        previewSurfaceView.setDrawingFocusView(focusView);
 
         ImageView captureButton = (ImageView) view.findViewById(R.id.capture_button);
         captureButton.setOnClickListener(captureButtonOnClickListener);
 
-        viewTreeObserver = preview.getViewTreeObserver();
+        viewTreeObserver = previewSurfaceView.getViewTreeObserver();
         if (viewTreeObserver.isAlive()) {
             viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
-                    cameraPreview.setDisplayWidth(preview.getWidth());
-                    cameraPreview.setDisplayHeight(preview.getHeight());
-                    Log.i("WIDTH - 2", String.valueOf(preview.getWidth()));
-                    Log.i("HEIGHT - 2", String.valueOf(preview.getHeight()));
+                    cameraPreview.setDisplayWidth(previewSurfaceView.getWidth());
+                    cameraPreview.setDisplayHeight(previewSurfaceView.getHeight());
                 }
             });
         }
 
-        preview.addView(cameraPreview);
-
         return view;
     }
-
-
 
     @Override
     public void onPause() {
         super.onPause();
         releaseCamera();
     }
+
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -102,7 +108,7 @@ public class CameraFragment extends Fragment {
                 // Image captured and saved to fileUri specified in the Intent
 //                Toast.makeText(this, "Image saved to: \n" + data.getData(), Toast.LENGTH_LONG).show();
 
-            } else if(resultCode == getActivity().RESULT_CANCELED) {
+            } else if (resultCode == getActivity().RESULT_CANCELED) {
                 // User canceled image capture
 
             } else {
@@ -113,8 +119,6 @@ public class CameraFragment extends Fragment {
 
     /**
      * Create a file Uri for saving an image or video
-     * @param type
-     * @return
      */
     public Uri getOutputMediaFileUri(int type) {
         return Uri.fromFile(getOutputMediaFile(type));
@@ -122,8 +126,6 @@ public class CameraFragment extends Fragment {
 
     /**
      * Create a File for saving an image or video
-     * @param type
-     * @return
      */
     public File getOutputMediaFile(int type) {
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
@@ -159,29 +161,6 @@ public class CameraFragment extends Fragment {
         } else return null;
     }
 
-    /**
-     * Check if phone has a camera
-     * @param context
-     * @return
-     */
-    private boolean deviceHasCameraHardware(Context context) {
-        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
-    }
-
-    /**
-     * Get an instance of camera object
-     */
-    private Camera getCameraInstance() {
-        Camera c = null;
-        try {
-            c = Camera.open();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return c;
-    }
-
     private Camera.PictureCallback picture = new Camera.PictureCallback() {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
@@ -207,12 +186,39 @@ public class CameraFragment extends Fragment {
         }
     };
 
+    /**
+     * Releases camera
+     */
     private void releaseCamera() {
         if (camera != null) {
+            camera.stopPreview();
+            camera.setPreviewCallback(null);
             camera.release();
             camera = null;
         }
     }
+
+    /**
+     * Get an instance of camera object
+     */
+    @SuppressWarnings("deprecation")
+    private Camera getCameraInstance() {
+        Camera c = null;
+        try {
+            c = Camera.open();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return c;
+    }
+
+    /**
+     * Check if phone has a camera
+     */
+    private boolean deviceHasCameraHardware(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
+    }
+
 
 
 }
