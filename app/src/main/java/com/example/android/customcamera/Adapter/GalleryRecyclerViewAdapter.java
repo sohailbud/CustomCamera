@@ -53,8 +53,9 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         public ViewHolder(View itemView) {
             super(itemView);
 
-            itemView.setOnClickListener(this);
             gridImage = (ImageView) itemView.findViewById(R.id.gridImage);
+            gridImage.setOnClickListener(this);
+
         }
 
         @Override

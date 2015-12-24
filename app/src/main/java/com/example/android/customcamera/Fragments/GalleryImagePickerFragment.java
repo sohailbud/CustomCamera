@@ -63,7 +63,9 @@ public class GalleryImagePickerFragment extends Fragment {
         return view;
     }
 
-
+    /**
+     * gets images from phone and stores the paths in a list
+     */
     public List<String> getFullImages(Context context) {
 
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
@@ -83,23 +85,5 @@ public class GalleryImagePickerFragment extends Fragment {
 
         return imagesData;
 
-    }
-
-    public List<String> getThumbnails(Context context) {
-
-        Uri uri = MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI;
-        CursorLoader thumbnailsCursorLoader = new CursorLoader(context, uri, null, null, null, null);
-
-        Cursor cursor = thumbnailsCursorLoader.loadInBackground();
-
-        List<String> thumbnailsData = new ArrayList<>();
-        while (cursor.moveToNext()) {
-            int dataIndex = cursor.getColumnIndex(MediaStore.Images.Thumbnails.DATA);
-            String data = cursor.getString(dataIndex);
-            thumbnailsData.add(data);
-        }
-        cursor.close();
-
-        return thumbnailsData;
     }
 }

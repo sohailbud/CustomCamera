@@ -112,7 +112,6 @@ public class ImageCache {
      * gets bitmap from the disk cache directory
      * @param url path of the original image
      * @param context to get cache dir
-     * @return
      */
     public Bitmap getBitmapFromDiskCache(String url, Context context) {
         if (url == null) return null;
@@ -131,7 +130,7 @@ public class ImageCache {
             throw new IllegalArgumentException("setMemCacheSizePercent - percent must be "
                     + "between 0.01 and 0.8 (inclusive)");
 
-        memCacheSize = Math.round(percent * Runtime.getRuntime().maxMemory() / 1024);
+        memCacheSize = Math.round(percent * Runtime.getRuntime().maxMemory());
     }
 
     /**
