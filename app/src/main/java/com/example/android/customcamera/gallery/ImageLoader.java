@@ -38,7 +38,7 @@ public class ImageLoader {
     // empty bitmap to set while actual bitmap loads
     private Bitmap emptyBitmap;
 
-    public ImageLoader(Context context) {
+    public ImageLoader(Context context, int imageSize) {
         executorService = Executors.newFixedThreadPool(5);
         this.context = context;
         imageCache = new ImageCache();
@@ -226,6 +226,8 @@ public class ImageLoader {
 
         return inSampleSize;
     }
+
+
 
 
 }

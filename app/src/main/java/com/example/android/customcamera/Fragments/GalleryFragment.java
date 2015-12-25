@@ -21,9 +21,13 @@ public class GalleryFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
+
+        GalleryImagePickerFragment galleryImagePickerFragment = new GalleryImagePickerFragment();
+        galleryImagePickerFragment.setArguments(getArguments());
+
         getChildFragmentManager().beginTransaction().add(
                 R.id.gallery_image_picker_container,
-                new GalleryImagePickerFragment()).commit();
+                galleryImagePickerFragment).commit();
 
 
         // Inflate the layout for this fragment

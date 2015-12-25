@@ -9,10 +9,12 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
 import com.example.android.customcamera.Fragments.CameraFragment;
 import com.example.android.customcamera.Fragments.GalleryFragment;
+import com.example.android.customcamera.Fragments.GalleryImagePickerFragment;
 import com.example.android.customcamera.Fragments.VideoFragment;
 
 import java.util.ArrayList;
@@ -20,13 +22,19 @@ import java.util.List;
 
 public class PhotoActivity extends AppCompatActivity {
 
+//    private static final String TAB_LAYOUT_HEIGHT_KEY = "tabLayoutHeight";
+
+    private TabLayout tabLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
 
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
         ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+
+
 
         if (viewPager != null) {
             setupViewPager(viewPager);
@@ -41,8 +49,11 @@ public class PhotoActivity extends AppCompatActivity {
         }
     }
 
+
+
     private void setupViewPager(ViewPager viewPager) {
         TabsPagerAdapter pagerAdapter = new TabsPagerAdapter(getSupportFragmentManager());
+
         pagerAdapter.addFragment(new GalleryFragment(), "GALLERY");
         pagerAdapter.addFragment(new CameraFragment(), "CAMERA");
         pagerAdapter.addFragment(new VideoFragment(), "VIDEO");
@@ -78,5 +89,4 @@ public class PhotoActivity extends AppCompatActivity {
             return FRAGMENTS_TITLES.get(position);
         }
     }
-
 }

@@ -11,6 +11,7 @@ import android.widget.Toast;
 import com.example.android.customcamera.R;
 import com.example.android.customcamera.gallery.ImageLoader;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,13 +21,14 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
 
     private LayoutInflater inflater;
     private List<String> data;
+    private int imageSize;
 
     private ImageLoader imageLoader;
 
     public GalleryRecyclerViewAdapter(Context context, List<String> data) {
         inflater = LayoutInflater.from(context);
+        this.imageLoader = new ImageLoader(context, imageSize);
         this.data = data;
-        this.imageLoader = new ImageLoader(context);
     }
 
     @Override
@@ -34,6 +36,8 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         View view = inflater.inflate(R.layout.fragment_gallery_image_picker_item, parent, false);
         return new ViewHolder(view);
     }
+
+
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
@@ -62,6 +66,10 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         public void onClick(View v) {
             Toast.makeText(v.getContext(), String.valueOf(v.getTag()), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void setImageSize(int imageSize) {
+        this.imageSize = imageSize;
     }
 }
 

@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -25,6 +26,8 @@ import java.util.List;
 
 public class GalleryImagePickerFragment extends Fragment {
 
+    private static int tabLayoutHeight;
+
     public GalleryImagePickerFragment() {
         // Required empty public constructor
     }
@@ -38,12 +41,26 @@ public class GalleryImagePickerFragment extends Fragment {
 
         final RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.photosGridItemContainer);
 
-        ViewTreeObserver viewTreeObserver = recyclerView.getViewTreeObserver();
-        viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+        final TabLayout tabLayout = (TabLayout) getActivity().findViewById(R.id.tabs);
+        ViewTreeObserver tabLayoutViewTreeObserver = tabLayout.getViewTreeObserver();
+        tabLayoutViewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                float width = recyclerView.getWidth() / 3;
-                Log.i("WIDTH", Float.toString(width));
+                tabLayoutHeight = tabLayout.getHeight();
+                recyclerView.setPadding(0, 0, 0, tabLayoutHeight);
+
+            }
+        });
+
+        final GalleryRecyclerViewAdapter galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(
+                getActivity(), getFullImages(getActivity()));
+
+
+        ViewTreeObserver recyclerViewViewTreeObserver = recyclerView.getViewTreeObserver();
+        recyclerViewViewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                galleryRecyclerViewAdapter.setImageSize(recyclerView.getWidth() / 3);
             }
         });
 
@@ -52,13 +69,10 @@ public class GalleryImagePickerFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
 
         // use a grid layout manager
-        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(getActivity(), 3);
-        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
 
         // specify an adapter
-        RecyclerView.Adapter adapter = new GalleryRecyclerViewAdapter(
-                getActivity(), getFullImages(getContext()));
-        recyclerView.setAdapter(adapter);
+        recyclerView.setAdapter(galleryRecyclerViewAdapter);
 
         return view;
     }
@@ -86,4 +100,8 @@ public class GalleryImagePickerFragment extends Fragment {
         return imagesData;
 
     }
+
+
+
+
 }
