@@ -1,4 +1,4 @@
-package com.example.android.customcamera.Adapter;
+package com.example.android.customcamera.adapter;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -11,7 +11,6 @@ import android.widget.Toast;
 import com.example.android.customcamera.R;
 import com.example.android.customcamera.gallery.ImageLoader;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
